@@ -365,11 +365,11 @@
                 mealsEl.textContent = data.meals[idx];
                 
                 if (st === "eating") {
-                    plate.innerHTML = `<img src="{{ url_for('static', filename='Assets/espijo.png') }}">`;
+                    plate.innerHTML = `<img src="{{ url_for('static', filename='Assets/Espijo.png') }}">`;
                     plate.style.transform = "scale(1.2)";
                     plate.style.zIndex = "15";
                 } else {
-                    plate.innerHTML = `<img src="{{ url_for('static', filename='Assets/piring.png') }}">`;
+                    plate.innerHTML = `<img src="{{ url_for('static', filename='Assets/Piring.png') }}">`;
                     plate.style.transform = "scale(1)";
                     plate.style.zIndex = "5";
                 }
