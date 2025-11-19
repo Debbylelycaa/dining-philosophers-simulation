@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dining Philosophers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+
+<body class="min-h-screen p-6">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+                Dining Philosophers
+            </h1>
+            <p class="text-gray-600 text-sm md:text-lg">
+                Simulasi tiga solusi klasik masalah deadlock dalam sistem operasi
+            </p>
+        </header>
+
+        <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+            <div class="xl:col-span-2">
+                <div class="card-glass p-12 h-full mb-6">
+                    <div class="flex justify-between items-center mb-8">
+                        <h2 class="text-xl font-semibold text-gray-800">
+                            Simulasi Meja Makan
+                        </h2>
+                        <div class="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                            Status:
+                            <span id="simulationStatus" class="font-semibold simulation-stopped">Stopped</span>
+                        </div>
+                    </div>
+
+                    <div class="table-container" style="max-width: 600px">
+                        <div class="table-circle" id="tableCircle"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="xl:col-span-1">
+                <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-1 gap-6 h-full">
+                    <!-- Kontrol Card -->
+                    <div class="card-glass p-6">
+                        <h3 class="font-semibold text-gray-800 mb-4 text-lg">
+                            <i class="fas fa-gamepad mr-2"></i>Kontrol
+                        </h3>
+                        <div class="grid grid-cols-3 gap-3 mb-6">
+                            <button
+                                id="startBtn"
+                                class="p-3 bg-green-500 hover:bg-green-600 text-white rounded-lg shadow transition-all flex flex-col items-center btn-hover-scale"
+                            >
+                                <i class="fas fa-play text-lg mb-1"></i>
+                                <span class="text-xs">Start</span>
+                            </button>
+                            <button
+                                id="pauseBtn"
+                                class="p-3 btn-pause text-white rounded-lg shadow transition-all flex flex-col items-center btn-disabled"
+                                disabled
+                            >
+                                <i class="fas fa-pause text-lg mb-1"></i>
+                                <span class="text-xs">Pause</span>
+                            </button>
+                            <button
+                                id="resetBtn"
+                                class="p-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg shadow transition-all flex flex-col items-center btn-disabled"
+                                disabled
+                            >
+                                <i class="fas fa-redo text-lg mb-1"></i>
+                                <span class="text-xs">Reset</span>
+                            </button>
+                        </div>
+
+                        <h3 class="font-semibold text-gray-800 mb-4 text-lg">
+                            <i class="fas fa-tachometer-alt mr-2"></i>Kecepatan
+                        </h3>
+                        <div class="space-y-3">
+                            <label class="block text-sm text-gray-600">
+                                Kecepatan:
+                                <span id="speedLabel" class="font-semibold">1x</span>
+                            </label>
+                            <input
+                                id="speedSlider"
+                                type="range"
+                                min="0.5"
+                                max="3"
+                                step="0.1"
+                                value="1"
+                                class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
+                            />
+                        </div>
+                    </div>
+
+                    <!-- Solusi Card -->
+                    <div class="card-glass p-6">
+                        <h3 class="font-semibold text-gray-800 mb-4 text-lg">
+                            <i class="fas fa-cogs mr-2"></i>Solusi
+                        </h3>
+                        <select
+                            id="solutionSelect"
+                            class="w-full p-3 border-2 border-gray-200 rounded-xl focus:border-green-400 focus:outline-none transition-all bg-white"
+                        >
+                            <option value="asymmetric">Solusi Asimetrik</option>
+                            <option value="four_only">4 Filsuf dari 5 Filsuf</option>
+                            <option value="token_passing">Passing Token</option>
+                        </select>
+
+                        <h3 class="font-semibold text-gray-800 mt-6 mb-3 text-lg">
+                            <i class="fas fa-info-circle mr-2"></i>Deskripsi
+                        </h3>
+                        <div
+                            id="solutionDescription"
+                            class="text-sm text-gray-600 space-y-3 max-h-60 overflow-y-auto pr-2"
+                        ></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Log Card -->
+        <div class="card-glass p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-semibold text-gray-800 text-lg">
+                    <i class="fas fa-terminal mr-2"></i>Log Sistem
+                </h3>
+                <button
+                    id="clearLogBtn"
+                    class="text-xs bg-gray-500 hover:bg-gray-600 text-white px-3 py-1 rounded transition-all btn-hover-scale"
+                >
+                    <i class="fas fa-trash mr-1"></i>Clear Log
+                </button>
+            </div>
+            <div class="log-container" id="logContainer">
+                <div id="logContent">
+                    <div class="log-entry">
+                        Sistem ready. Pilih solusi dan mulai simulasi.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const PHILOSOPHERS = [
+            { id: 0, name: "Debby", emoji: "💁‍♀️" },
+            { id: 1, name: "Dianne", emoji: "👩‍💼" },
+            { id: 2, name: "Khalilah", emoji: "👩‍🎓" },
+            { id: 3, name: "Hafizh", emoji: "👨‍💻" },
+            { id: 4, name: "Giyats", emoji: "👨‍🏫" },
+        ];
+
+        const SOLUTION_DESCRIPTIONS = {
+            asymmetric: `
+                <div class="space-y-2">
+                    <div class="font-semibold text-green-600">Solusi Asimetrik (Ganjil–Genap)</div>
+                    <ul class="list-disc list-inside space-y-1 text-xs">
+                        <li><b>Ganjil</b> (1, 3) ambil <b>kiri</b> dulu lalu kanan.</li>
+                        <li><b>Genap</b> (0, 2, 4) ambil <b>kanan</b> dulu lalu kiri.</li>
+                        <li>Kalau sumpit kedua gagal, lepas sumpit pertama & backoff sebentar → anti-deadlock.</li>
+                    </ul>
+                </div>
+            `,
+            four_only: `
+                <div class="space-y-2">
+                    <div class="font-semibold text-green-600">Solusi 4 Filosof Saja</div>
+                    <ul class="list-disc list-inside space-y-1 text-xs">
+                        <li>Maks 4 yang boleh mencoba makan bersamaan (semaphore N-1).</li>
+                    </ul>
+                </div>
+            `,
+            token_passing: `
+                <div class="space-y-2">
+                    <div class="font-semibold text-green-600">Solusi Passing Token</div>
+                    <ul class="list-disc list-inside space-y-1 text-xs">
+                        <li>Hanya yang pegang token yang boleh makan, lalu oper token.</li>
+                    </ul>
+                </div>
+            `,
+        };
+
+        let currentSolution = "asymmetric",
+            simulationSpeed = 1;
+        let isRunning = false,
+            isPaused = false,
+            statusInterval = null,
+            currentLogs = [];
+
+        function createTableElements() {
+            const table = document.getElementById("tableCircle");
+            table.innerHTML = "";
+            const container = table.parentElement,
+                size = container.offsetWidth;
+            const center = size / 2,
+                base = -90 * (Math.PI / 180);
+            const plateRadius = size * 0.28;
+            const infoRadius = size * 0.52;
+            const chopstickRadius = size * 0.36;
+
+            for (let i = 0; i < 5; i++) {
+                const angle = base + i * ((2 * Math.PI) / 5) + Math.PI / 5 / 2;
+                const x = center + plateRadius * Math.cos(angle);
+                const y = center + plateRadius * Math.sin(angle);
+                const plate = document.createElement("div");
+                plate.className = "plate";
+                plate.id = `plate-${i}`;
+                plate.style.left = `${x - 30}px`;
+                plate.style.top = `${y - 30}px`;
+                plate.innerHTML = `<div class="pisang-ijo">🥣</div>`;
+                table.appendChild(plate);
+            }
+
+            // Sumpit
+            for (let i = 0; i < 5; i++) {
+                const angle = base + i * ((2 * Math.PI) / 5);
+                const startX = center + (chopstickRadius - 28) * Math.cos(angle);
+                const startY = center + (chopstickRadius - 28) * Math.sin(angle);
+                const endX = center + (chopstickRadius + 28) * Math.cos(angle);
+                const endY = center + (chopstickRadius + 28) * Math.sin(angle);
+                const length = Math.hypot(endX - startX, endY - startY);
+                const rotation = Math.atan2(endY - startY, endX - startX) * (180 / Math.PI);
+                const stick = document.createElement("div");
+                stick.className = "chopstick";
+                stick.id = `chopstick-${i}`;
+                stick.style.left = `${startX}px`;
+                stick.style.top = `${startY}px`;
+                stick.style.width = `${length}px`;
+                stick.style.transform = `rotate(${rotation}deg)`;
+                table.appendChild(stick);
+            }
+
+            PHILOSOPHERS.forEach((p, idx) => {
+                const angle = base + idx * ((2 * Math.PI) / 5) + Math.PI / 5 / 2;
+                const x = center + infoRadius * Math.cos(angle);
+                const y = center + infoRadius * Math.sin(angle);
+                const info = document.createElement("div");
+                info.className = "philosopher-info";
+                info.id = `info-${idx}`;
+                info.style.left = `${x - 55}px`;
+                info.style.top = `${y - 45}px`;
+                info.innerHTML = `
+                    <div class="text-lg mb-1">${p.emoji}</div>
+                    <div class="font-semibold text-sm">${p.name}</div>
+                    <div id="state-${idx}" class="text-xs mt-1 px-2 py-1 rounded-full state-thinking">Thinking</div>
+                    <div class="text-xs text-gray-500 mt-1">Makan: <span id="meals-${idx}">0</span></div>
+                `;
+                table.appendChild(info);
+            });
+        }
+
+        function updateSolutionDescription() {
+            document.getElementById("solutionDescription").innerHTML =
+                SOLUTION_DESCRIPTIONS[currentSolution] || "";
+        }
+
+        function updateControlStates() {
+            const startBtn = document.getElementById("startBtn"),
+                pauseBtn = document.getElementById("pauseBtn"),
+                resetBtn = document.getElementById("resetBtn"),
+                solutionSelect = document.getElementById("solutionSelect"),
+                speedSlider = document.getElementById("speedSlider"),
+                statusEl = document.getElementById("simulationStatus");
+
+            if (isRunning) {
+                statusEl.textContent = isPaused ? "Paused" : "Running";
+                statusEl.className = isPaused ? "simulation-paused" : "simulation-running";
+                startBtn.disabled = true;
+                startBtn.classList.add("btn-disabled");
+                pauseBtn.disabled = false;
+                pauseBtn.classList.remove("btn-disabled");
+                resetBtn.disabled = false;
+                resetBtn.classList.remove("btn-disabled");
+                if (isPaused) {
+                    pauseBtn.innerHTML = '<i class="fas fa-play text-lg mb-1"></i><span class="text-xs">Resume</span>';
+                    pauseBtn.classList.remove("btn-pause");
+                    pauseBtn.classList.add("bg-green-500", "hover:bg-green-600");
+                } else {
+                    pauseBtn.innerHTML = '<i class="fas fa-pause text-lg mb-1"></i><span class="text-xs">Pause</span>';
+                    pauseBtn.classList.add("btn-pause");
+                    pauseBtn.classList.remove("bg-green-500", "hover:bg-green-600");
+                }
+                solutionSelect.disabled = true;
+                speedSlider.disabled = true;
+            } else {
+                statusEl.textContent = "Stopped";
+                statusEl.className = "simulation-stopped";
+                startBtn.disabled = false;
+                startBtn.classList.remove("btn-disabled");
+                pauseBtn.disabled = true;
+                pauseBtn.classList.add("btn-disabled");
+                resetBtn.disabled = false;
+                resetBtn.classList.remove("btn-disabled");
+                pauseBtn.innerHTML = '<i class="fas fa-pause text-lg mb-1"></i><span class="text-xs">Pause</span>';
+                pauseBtn.classList.add("btn-pause");
+                pauseBtn.classList.remove("bg-green-500", "hover:bg-green-600");
+                solutionSelect.disabled = false;
+                speedSlider.disabled = false;
+            }
+        }
+
+        function updateLogs(newLogs) {
+            const logContent = document.getElementById("logContent"),
+                logContainer = document.getElementById("logContainer");
+            const newEntries = newLogs.slice(currentLogs.length);
+            newEntries.forEach((log) => {
+                const e = document.createElement("div");
+                e.className = "log-entry";
+                e.textContent = log;
+                logContent.appendChild(e);
+            });
+            currentLogs = newLogs;
+            if (!isPaused) {
+                logContainer.scrollTop = logContainer.scrollHeight;
+            }
+        }
+
+        function resetLogUI(msg = "Sistem ready. Pilih solusi dan mulai simulasi.") {
+            const logContent = document.getElementById("logContent");
+            currentLogs = [];
+            logContent.innerHTML = `<div class="log-entry">${msg}</div>`;
+            document.getElementById("logContainer").scrollTop = 1e9;
+        }
+
+        function clearLogs() {
+            resetLogUI("Log cleared");
+        }
+
+        function updateVisualization(data) {
+            isRunning = data.running;
+            isPaused = data.paused || false;
+            updateControlStates();
+            
+            for (let i = 0; i < 5; i++) {
+                const plate = document.getElementById(`plate-${i}`);
+                plate.style.transform = "scale(1)";
+                plate.style.zIndex = "5";
+            }
+            
+            data.states.forEach((st, idx) => {
+                const stateEl = document.getElementById(`state-${idx}`),
+                    mealsEl = document.getElementById(`meals-${idx}`),
+                    plate = document.getElementById(`plate-${idx}`);
+                
+                const map = {
+                    thinking: "🧠 Thinking",
+                    hungry: "😋 Hungry",
+                    eating: "🍽️ Eating",
+                };
+                
+                stateEl.textContent = map[st] || st;
+                
+                stateEl.className = `text-xs mt-1 px-2 py-1 rounded-full ${
+                    st === "thinking" ? "state-thinking" :
+                    st === "hungry" ? "state-hungry" : "state-eating"
+                }`;
+                
+                mealsEl.textContent = data.meals[idx];
+                
+                if (st === "eating") {
+                    plate.innerHTML = `<img src="{{ url_for('static', filename='Assets/espijo.png') }}">`;
+                    plate.style.transform = "scale(1.2)";
+                    plate.style.zIndex = "15";
+                } else {
+                    plate.innerHTML = `<img src="{{ url_for('static', filename='Assets/piring.png') }}">`;
+                    plate.style.transform = "scale(1)";
+                    plate.style.zIndex = "5";
+                }
+            });
+            
+            if (data.logs && data.logs.length > currentLogs.length) {
+                updateLogs(data.logs);
+            }
+        }
+
+        function handleResize() {
+            createTableElements();
+        }
+
+        // API Functions 
+        async function startSimulation() {
+            try {
+                const res = await fetch("/start", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        solution_type: currentSolution,
+                        speed: simulationSpeed,
+                    }),
+                });
+                if (res.ok) {
+                    resetLogUI("Simulasi dimulai!");
+                    startStatusUpdates();
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function togglePauseSimulation() {
+            try {
+                if (isPaused) {
+                    await fetch("/resume", { method: "POST" });
+                } else {
+                    await fetch("/pause", { method: "POST" });
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function resetSimulation() {
+            try {
+                await fetch("/reset", { method: "POST" });
+                stopStatusUpdates();
+                resetLogUI("Log cleared");
+                const st = await fetchStatus();
+                if (st) updateVisualization(st);
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        async function fetchStatus() {
+            try {
+                const r = await fetch("/status");
+                return await r.json();
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function startStatusUpdates() {
+            statusInterval = setInterval(async () => {  
+                const d = await fetchStatus();
+                if (d) updateVisualization(d);
+            }, 1000);
+        }
+
+        function stopStatusUpdates() {
+            if (statusInterval) {
+                clearInterval(statusInterval);
+                statusInterval = null;
+            }
+        }
+
+        // Event Listeners
+        document.addEventListener("DOMContentLoaded", () => {
+            createTableElements();
+            updateSolutionDescription();
+            updateControlStates();
+            
+            document.getElementById("solutionSelect").addEventListener("change", function () {
+                currentSolution = this.value;
+                updateSolutionDescription();
+            });
+            
+            document.getElementById("startBtn").addEventListener("click", startSimulation);
+            document.getElementById("pauseBtn").addEventListener("click", togglePauseSimulation);
+            document.getElementById("resetBtn").addEventListener("click", resetSimulation);
+            document.getElementById("clearLogBtn").addEventListener("click", clearLogs);
+            
+            document.getElementById("speedSlider").addEventListener("input", (e) => {
+                simulationSpeed = parseFloat(e.target.value);
+                document.getElementById("speedLabel").textContent = simulationSpeed + "x";
+            });
+            
+            window.addEventListener("resize", handleResize);
+            
+            fetchStatus().then((d) => {
+                if (d) updateVisualization(d);
+            });
+        });
+    </script>
+
+    <footer class="mt-10 py-4 text-center text-xs text-green-900 bg-gradient-to-r from-green-100 to-lime-100 border-t border-green-300/50 footer-fade">
+        <p class="font-small tracking-wide">
+            Dining Philosophers Alternative Solution Simulator<br>Oleh
+            <span class="font-bold text-green-700">Kelompok Es Pisang Ijo Gapake Keju</span>
+        </p>
+    </footer>
+</body>
+</html>
