@@ -14,7 +14,7 @@ class LogSystem:
         self.logs=[]; self.max_logs=max_logs; self.lock=threading.Lock()
     def add_log(self, msg, pid=None):
         ts=datetime.now().strftime("%H:%M:%S")
-        entry=f"[{ts}] Filosof {pid+1}: {msg}" if pid is not None else f"[{ts}] {msg}"
+        entry=f"[{ts}] Filosof {pid}: {msg}" if pid is not None else f"[{ts}] {msg}"
         with self.lock:
             self.logs.append(entry)
             if len(self.logs)>self.max_logs: self.logs.pop(0)
