@@ -171,6 +171,7 @@ class AsymmetricSolution(BaseDiningSolution):
             first = self.R(i); second = self.L(i); txt = "kanan dulu (genap)"
         self.log.add_log(f"mengambil sumpit {txt}", i)
 
+        attempts = 0
         while self.running:
             if self.paused:
                 self.pause_event.wait()
@@ -179,16 +180,19 @@ class AsymmetricSolution(BaseDiningSolution):
             self.chopsticks[first].acquire()
             self.log.add_log(f"berhasil mengambil sumpit {first}", i)
 
-            got_second = self.chopsticks[second].acquire(timeout=0.15)
+            timeout = min(0.3 + (attempts * 0.1), 1.0)
+            got_second = self.chopsticks[second].acquire(timeout=timeout)
+            
             if got_second:
                 self.log.add_log(f"berhasil mengambil sumpit {second}", i)
                 return
             else:
                 self.chopsticks[first].release()
                 self.log.add_log(
-                    f"gagal ambil sumpit {second}, lepas {first} & menunggu ulang", i
+                    f"gagal ambil sumpit {second}, lepas {first} & coba lagi (attempt {attempts+1})", i
                 )
-                backoff_time = random.uniform(0.05, 0.2) / self.speed  
+                attempts += 1
+                backoff_time = random.uniform(0.1, 0.3) / self.speed
                 backoff_elapsed = 0
                 while backoff_elapsed < backoff_time and self.running:
                     if self.paused:
